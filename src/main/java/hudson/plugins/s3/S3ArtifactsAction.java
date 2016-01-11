@@ -57,24 +57,32 @@ public class S3ArtifactsAction implements RunAction {
     return artifacts;
   }
 
+  public String getDownloadUrl(final StaplerRequest request) {
+    String restOfPath = request.getRestOfPath();
+    if (restOfPath == null) {
+        return null;
+    }
+
+    // skip the leading /
+    String artifact = restOfPath.substring(1);
+    for (FingerprintRecord record : getArtifacts()) {
+        if (record.artifact.getName().equals(artifact)) {
+            S3Profile s3 = S3BucketPublisher.getProfile(profile);
+            return s3.getDownloadURL(build, record);
+        }
+    }
+
+    return null;
+  }
+
   public void doDownload(final StaplerRequest request, final StaplerResponse response) throws IOException, ServletException {
+      String url = getDownloadUrl(request);
 
-      String restOfPath = request.getRestOfPath();
-      if (restOfPath == null) {
-          return;
+      if (url != null) {
+          response.sendRedirect2(url);
+      } else {
+          response.sendError(404, "This artifact is not available");
       }
-
-      // skip the leading /
-      String artifact = restOfPath.substring(1);
-      for (FingerprintRecord record : getArtifacts()) {
-          if (record.artifact.getName().equals(artifact)) {
-              S3Profile s3 = S3BucketPublisher.getProfile(profile);
-              String url = s3.getDownloadURL(build, record);
-              response.sendRedirect2(url);
-              return;
-          }
-      }
-      response.sendError(404, "This artifact is not available");
   }
 
 }
