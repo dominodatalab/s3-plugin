@@ -1,7 +1,11 @@
 package hudson.plugins.s3;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Date;
 
 import javax.servlet.ServletException;
 
@@ -73,6 +77,18 @@ public class S3ArtifactsAction implements RunAction {
     }
 
     return null;
+  }
+
+  public void doGetDownloadUrl(final StaplerRequest request, final StaplerResponse response) throws IOException, ServletException {
+      String url = getDownloadUrl(request);
+      InputStream urlStream = new ByteArrayInputStream(url.getBytes(StandardCharsets.UTF_8));
+      Date now = new Date();
+
+      if (url != null) {
+          response.serveFile(request, urlStream, now.getTime(), 0, url.length(), "url.txt");
+      } else {
+          response.sendError(404, "This artifact is not available");
+      }
   }
 
   public void doDownload(final StaplerRequest request, final StaplerResponse response) throws IOException, ServletException {
